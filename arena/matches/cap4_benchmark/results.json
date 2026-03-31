@@ -1,0 +1,268 @@
+{
+  "timestamp": "20260319T123242Z",
+  "match": "cap4_benchmark",
+  "config": {
+    "description": "Cap4 linear benchmark \u2014 acc80, symbolic oracle.",
+    "world": {
+      "feed": "direct",
+      "n_counts": 4,
+      "seq_len": 300,
+      "seed": 42,
+      "p_read": 0.6,
+      "n_seeds": 3
+    },
+    "matcher": {
+      "type": "brute_force",
+      "scorer": "deficit",
+      "top_k": 6
+    },
+    "models": [
+      "demos/wynns_world/models/pretrained/cap4_acc80",
+      {
+        "type": "symbolic",
+        "n_counts": 4,
+        "name": "symbolic_cap4"
+      }
+    ]
+  },
+  "results": {
+    "cap4_acc80": {
+      "results": [
+        {
+          "deficit": 0.05180385543240439,
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2",
+            "C3": "C3"
+          }
+        },
+        {
+          "deficit": 0.6736286285643774,
+          "perm": [
+            1,
+            0,
+            5,
+            4,
+            3,
+            2
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C3",
+            "C1": "C2",
+            "C2": "C1",
+            "C3": "C0"
+          }
+        },
+        {
+          "deficit": 2.8307998656398694,
+          "perm": [
+            0,
+            1,
+            2,
+            4,
+            3,
+            5
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C2",
+            "C2": "C1",
+            "C3": "C3"
+          }
+        },
+        {
+          "deficit": 3.43244718788709,
+          "perm": [
+            1,
+            0,
+            4,
+            5,
+            3,
+            2
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C2",
+            "C1": "C3",
+            "C2": "C1",
+            "C3": "C0"
+          }
+        },
+        {
+          "deficit": 4.081474436653986,
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            5,
+            4
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C3",
+            "C3": "C2"
+          }
+        },
+        {
+          "deficit": 4.421898950408731,
+          "perm": [
+            1,
+            0,
+            5,
+            3,
+            4,
+            2
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C3",
+            "C1": "C1",
+            "C2": "C2",
+            "C3": "C0"
+          }
+        }
+      ],
+      "n_perms": 720
+    },
+    "symbolic_cap4": {
+      "results": [
+        {
+          "deficit": 0.0,
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2",
+            "C3": "C3"
+          }
+        },
+        {
+          "deficit": 0.0,
+          "perm": [
+            1,
+            0,
+            5,
+            4,
+            3,
+            2
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C3",
+            "C1": "C2",
+            "C2": "C1",
+            "C3": "C0"
+          }
+        },
+        {
+          "deficit": 4.444444444444444,
+          "perm": [
+            0,
+            1,
+            5,
+            2,
+            3,
+            4
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C3",
+            "C1": "C0",
+            "C2": "C1",
+            "C3": "C2"
+          }
+        },
+        {
+          "deficit": 4.444444444444444,
+          "perm": [
+            1,
+            0,
+            2,
+            5,
+            4,
+            3
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C0",
+            "C1": "C3",
+            "C2": "C2",
+            "C3": "C1"
+          }
+        },
+        {
+          "deficit": 4.722222222222222,
+          "perm": [
+            0,
+            1,
+            3,
+            4,
+            5,
+            2
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C1",
+            "C1": "C2",
+            "C2": "C3",
+            "C3": "C0"
+          }
+        },
+        {
+          "deficit": 4.722222222222222,
+          "perm": [
+            1,
+            0,
+            4,
+            3,
+            2,
+            5
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C2",
+            "C1": "C1",
+            "C2": "C0",
+            "C3": "C3"
+          }
+        }
+      ],
+      "n_perms": 720
+    }
+  }
+}

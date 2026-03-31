@@ -1,0 +1,39 @@
+{
+  "description": "Cap4 linear — acc80 model at repeg_alpha 0, 0.1, 0.2, 0.5 vs symbolic oracle.",
+  "world": {
+    "feed": "direct",
+    "n_counts": 4,
+    "seq_len": 300,
+    "seed": 42,
+    "p_read": 0.6,
+    "n_seeds": 3
+  },
+  "matcher": {
+    "type": "brute_force",
+    "scorer": "deficit",
+    "top_k": 4
+  },
+  "models": [
+    {"type": "symbolic", "n_counts": 4, "name": "symbolic_cap4"},
+    {
+      "dir":  "demos/wynns_world/models/pretrained/cap4_acc80",
+      "name": "cap4_acc80_repeg0.0",
+      "repeg_alpha": 0.0
+    },
+    {
+      "dir":  "demos/wynns_world/models/pretrained/cap4_acc80",
+      "name": "cap4_acc80_repeg0.1",
+      "repeg_alpha": 0.1
+    },
+    {
+      "dir":  "demos/wynns_world/models/pretrained/cap4_acc80",
+      "name": "cap4_acc80_repeg0.2",
+      "repeg_alpha": 0.2
+    },
+    {
+      "dir":  "demos/wynns_world/models/pretrained/cap4_acc80",
+      "name": "cap4_acc80_repeg0.5",
+      "repeg_alpha": 0.5
+    }
+  ]
+}

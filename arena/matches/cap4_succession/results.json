@@ -1,0 +1,267 @@
+{
+  "timestamp": "20260320T152717Z",
+  "match": "cap4_succession",
+  "config": {
+    "description": "Succession event: ghost and full cap4 model compete incrementally. Ghost leads at cap3, fails at cap4. Full cap4 takes over.",
+    "world": {
+      "feed": "direct",
+      "n_counts": 4,
+      "seq_len": 300,
+      "seed": 42,
+      "p_read": 0.6,
+      "n_seeds": 5
+    },
+    "matcher": {
+      "type": "incremental_topk",
+      "departure_n_counts": 3,
+      "scorer": "deficit",
+      "top_k": 4,
+      "pruning_strategy": "cliff",
+      "pruning_params": {
+        "cliff_min_gap": 0.1,
+        "min_contenders": 1
+      }
+    },
+    "models": [
+      "demos/wynns_world/models/pretrained/cap4_ghost",
+      "demos/wynns_world/models/pretrained/cap4_acc80"
+    ]
+  },
+  "results": {
+    "stage1": {
+      "results": [
+        {
+          "deficit": 0.0,
+          "model": "cap4_ghost",
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2"
+          }
+        },
+        {
+          "deficit": 0.01355506579081216,
+          "model": "cap4_ghost",
+          "perm": [
+            1,
+            0,
+            4,
+            3,
+            2
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C2",
+            "C1": "C1",
+            "C2": "C0"
+          }
+        },
+        {
+          "deficit": 0.05766991078853604,
+          "model": "cap4_acc80",
+          "perm": [
+            1,
+            0,
+            4,
+            3,
+            2
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C2",
+            "C1": "C1",
+            "C2": "C0"
+          }
+        },
+        {
+          "deficit": 0.37954466988642954,
+          "model": "cap4_acc80",
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2"
+          }
+        }
+      ],
+      "n_perms_per_model": {
+        "cap4_ghost": 720,
+        "cap4_acc80": 720
+      },
+      "n_contenders": 6,
+      "contenders_per_model": {
+        "cap4_ghost": 2,
+        "cap4_acc80": 4
+      },
+      "pruning_strategy": "cliff",
+      "pruning_params": {
+        "cliff_min_gap": 0.1,
+        "min_contenders": 1
+      }
+    },
+    "stage2": {
+      "results": [
+        {
+          "deficit": 0.03996297419071196,
+          "model": "cap4_acc80",
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2",
+            "C3": "C3"
+          },
+          "s1_perm": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "s1_token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2"
+          },
+          "s1_deficit": 0.37954466988642954
+        },
+        {
+          "deficit": 3.190463823576769,
+          "model": "cap4_acc80",
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            5,
+            4
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C3",
+            "C3": "C2"
+          },
+          "s1_perm": [
+            0,
+            1,
+            2,
+            3,
+            5
+          ],
+          "s1_token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C3"
+          },
+          "s1_deficit": 0.5072005038460088
+        },
+        {
+          "deficit": 7.069436957252522,
+          "model": "cap4_ghost",
+          "perm": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2",
+            "C3": "C3"
+          },
+          "s1_perm": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "s1_token_map": {
+            "INC": "INC",
+            "DEC": "DEC",
+            "C0": "C0",
+            "C1": "C1",
+            "C2": "C2"
+          },
+          "s1_deficit": 0.0
+        },
+        {
+          "deficit": 8.656980244986093,
+          "model": "cap4_ghost",
+          "perm": [
+            1,
+            0,
+            4,
+            3,
+            2,
+            5
+          ],
+          "token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C2",
+            "C1": "C1",
+            "C2": "C0",
+            "C3": "C3"
+          },
+          "s1_perm": [
+            1,
+            0,
+            4,
+            3,
+            2
+          ],
+          "s1_token_map": {
+            "INC": "DEC",
+            "DEC": "INC",
+            "C0": "C2",
+            "C1": "C1",
+            "C2": "C0"
+          },
+          "s1_deficit": 0.01355506579081216
+        }
+      ],
+      "n_perms": 6
+    }
+  }
+}

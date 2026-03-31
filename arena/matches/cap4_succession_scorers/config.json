@@ -1,0 +1,27 @@
+{
+  "description": "Scorer robustness: cap4 succession under deficit, tiered, and cross_entropy",
+  "world": {
+    "feed": "direct",
+    "n_counts": 4,
+    "seq_len": 300,
+    "seed": 42,
+    "p_read": 0.6,
+    "n_seeds": 5
+  },
+  "matcher": {
+    "type": "scorer_robustness",
+    "base_type": "incremental_topk",
+    "departure_n_counts": 3,
+    "scorers": ["deficit", "tiered", "cross_entropy"],
+    "scorer_params": {
+      "tiered": {"eps": 0.02, "penalty": 1.0}
+    },
+    "pruning_strategy": "cliff",
+    "pruning_params": {"cliff_min_gap": 0.1, "min_contenders": 1},
+    "top_k": 4
+  },
+  "models": [
+    "demos/wynns_world/models/pretrained/cap4_ghost",
+    "demos/wynns_world/models/pretrained/cap4_acc80"
+  ]
+}

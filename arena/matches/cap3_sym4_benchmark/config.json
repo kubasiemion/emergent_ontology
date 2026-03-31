@@ -1,0 +1,21 @@
+{
+  "description": "Cap3 linear world — acc70, acc80 (cap3 models) vs symbolic cap4 oracle.",
+  "world": {
+    "feed": "direct",
+    "n_counts": 3,
+    "seq_len": 300,
+    "seed": 42,
+    "p_read": 0.6,
+    "n_seeds": 3
+  },
+  "matcher": {
+    "type": "brute_force",
+    "scorer": "deficit",
+    "top_k": 6
+  },
+  "models": [
+    "demos/wynns_world/models/pretrained/cap3_acc70",
+    "demos/wynns_world/models/pretrained/cap3_acc80",
+    {"type": "symbolic", "n_counts": 4, "name": "symbolic_cap4"}
+  ]
+}

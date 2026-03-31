@@ -1,0 +1,340 @@
+{
+  "timestamp": "20260320T152527Z",
+  "match": "cap4_lateral_detection",
+  "config": {
+    "description": "Lateral detection: ghost hides when C3 is not wired. Pass 1 ignores C3 (partial injection on cap4 sequences). Pass 2 forces C3 into the wiring.",
+    "world": {
+      "feed": "direct",
+      "n_counts": 4,
+      "seq_len": 300,
+      "seed": 42,
+      "p_read": 0.6,
+      "n_seeds": 5
+    },
+    "matcher": {
+      "type": "lateral_detection",
+      "partial_n_counts": 3,
+      "scorer": "deficit",
+      "top_k": 4
+    },
+    "models": [
+      "demos/wynns_world/models/pretrained/cap4_ghost",
+      "demos/wynns_world/models/pretrained/cap4_acc80"
+    ]
+  },
+  "filter_pct": 8.266666666666666,
+  "results": {
+    "partial": {
+      "cap4_ghost": {
+        "results": [
+          {
+            "deficit": 2.44664135047545,
+            "perm": [
+              1,
+              3,
+              4,
+              0,
+              2
+            ],
+            "token_map": {
+              "INC": "DEC",
+              "DEC": "C1",
+              "C0": "C2",
+              "C1": "INC",
+              "C2": "C0"
+            }
+          },
+          {
+            "deficit": 2.8734280437231057,
+            "perm": [
+              0,
+              3,
+              2,
+              1,
+              4
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "C1",
+              "C0": "C0",
+              "C1": "DEC",
+              "C2": "C2"
+            }
+          },
+          {
+            "deficit": 3.3844978570938116,
+            "perm": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C1",
+              "C2": "C2"
+            }
+          },
+          {
+            "deficit": 4.028624986050029,
+            "perm": [
+              1,
+              2,
+              4,
+              0,
+              3
+            ],
+            "token_map": {
+              "INC": "DEC",
+              "DEC": "C0",
+              "C0": "C2",
+              "C1": "INC",
+              "C2": "C1"
+            }
+          }
+        ],
+        "n_perms": 720
+      },
+      "cap4_acc80": {
+        "results": [
+          {
+            "deficit": 0.03996297419071196,
+            "perm": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C1",
+              "C2": "C2"
+            }
+          },
+          {
+            "deficit": 0.9823233776415388,
+            "perm": [
+              1,
+              0,
+              5,
+              4,
+              3
+            ],
+            "token_map": {
+              "INC": "DEC",
+              "DEC": "INC",
+              "C0": "C3",
+              "C1": "C2",
+              "C2": "C1"
+            }
+          },
+          {
+            "deficit": 3.190463823576769,
+            "perm": [
+              0,
+              1,
+              2,
+              3,
+              5
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C1",
+              "C2": "C3"
+            }
+          },
+          {
+            "deficit": 3.3788575095434945,
+            "perm": [
+              0,
+              1,
+              2,
+              4,
+              3
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C2",
+              "C2": "C1"
+            }
+          }
+        ],
+        "n_perms": 720
+      }
+    },
+    "full": {
+      "cap4_ghost": {
+        "results": [
+          {
+            "deficit": 6.3606141769637725,
+            "perm": [
+              0,
+              3,
+              2,
+              1,
+              4,
+              5
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "C1",
+              "C0": "C0",
+              "C1": "DEC",
+              "C2": "C2",
+              "C3": "C3"
+            }
+          },
+          {
+            "deficit": 6.488062424600751,
+            "perm": [
+              1,
+              3,
+              4,
+              0,
+              2,
+              5
+            ],
+            "token_map": {
+              "INC": "DEC",
+              "DEC": "C1",
+              "C0": "C2",
+              "C1": "INC",
+              "C2": "C0",
+              "C3": "C3"
+            }
+          },
+          {
+            "deficit": 7.034121767074493,
+            "perm": [
+              3,
+              1,
+              5,
+              2,
+              0,
+              4
+            ],
+            "token_map": {
+              "INC": "C1",
+              "DEC": "DEC",
+              "C0": "C3",
+              "C1": "C0",
+              "C2": "INC",
+              "C3": "C2"
+            }
+          },
+          {
+            "deficit": 7.069436957252522,
+            "perm": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C1",
+              "C2": "C2",
+              "C3": "C3"
+            }
+          }
+        ],
+        "n_perms": 720
+      },
+      "cap4_acc80": {
+        "results": [
+          {
+            "deficit": 0.03996297419071196,
+            "perm": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C1",
+              "C2": "C2",
+              "C3": "C3"
+            }
+          },
+          {
+            "deficit": 0.9823233776415388,
+            "perm": [
+              1,
+              0,
+              5,
+              4,
+              3,
+              2
+            ],
+            "token_map": {
+              "INC": "DEC",
+              "DEC": "INC",
+              "C0": "C3",
+              "C1": "C2",
+              "C2": "C1",
+              "C3": "C0"
+            }
+          },
+          {
+            "deficit": 3.190463823576769,
+            "perm": [
+              0,
+              1,
+              2,
+              3,
+              5,
+              4
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C1",
+              "C2": "C3",
+              "C3": "C2"
+            }
+          },
+          {
+            "deficit": 3.3788575095434945,
+            "perm": [
+              0,
+              1,
+              2,
+              4,
+              3,
+              5
+            ],
+            "token_map": {
+              "INC": "INC",
+              "DEC": "DEC",
+              "C0": "C0",
+              "C1": "C2",
+              "C2": "C1",
+              "C3": "C3"
+            }
+          }
+        ],
+        "n_perms": 720
+      }
+    }
+  }
+}

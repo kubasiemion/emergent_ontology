@@ -1,0 +1,28 @@
+{
+  "description": "Cap4 acc80 model vs itself: read-token GRU bypass on vs off.",
+  "world": {
+    "feed": "direct",
+    "n_counts": 4,
+    "seq_len": 300,
+    "seed": 42,
+    "p_read": 0.6,
+    "n_seeds": 3
+  },
+  "matcher": {
+    "type": "brute_force",
+    "scorer": "deficit",
+    "top_k": 6
+  },
+  "models": [
+    {
+      "dir":  "demos/wynns_world/models/pretrained/cap4_acc80",
+      "name": "cap4_bypass_on",
+      "bypass_read_tokens": true
+    },
+    {
+      "dir":  "demos/wynns_world/models/pretrained/cap4_acc80",
+      "name": "cap4_bypass_off",
+      "bypass_read_tokens": false
+    }
+  ]
+}

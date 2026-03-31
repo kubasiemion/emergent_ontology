@@ -1,0 +1,163 @@
+{
+  "timestamp": "20260322T120957Z",
+  "match": "cap5_retention_sweep",
+  "config": {
+    "description": "Retention policy sweep: cap3\u2192cap4\u2192cap5 incremental wiring under four pruning strategies",
+    "world": {
+      "feed": "direct",
+      "n_counts": 5,
+      "seq_len": 300,
+      "seed": 42,
+      "p_read": 0.6,
+      "n_seeds": 5
+    },
+    "matcher": {
+      "type": "retention_sweep",
+      "stages": [
+        3,
+        4,
+        5
+      ],
+      "scorer": "deficit",
+      "top_k": 6,
+      "policies": [
+        {
+          "name": "threshold_strict",
+          "label": "threshold=0.05",
+          "pruning_strategy": "threshold",
+          "pruning_params": {
+            "pruning_threshold": 0.05
+          }
+        },
+        {
+          "name": "cliff_current",
+          "label": "cliff (gap=0.1, min=1)",
+          "pruning_strategy": "cliff",
+          "pruning_params": {
+            "cliff_min_gap": 0.1,
+            "min_contenders": 1
+          }
+        },
+        {
+          "name": "threshold_lenient",
+          "label": "threshold=2.0",
+          "pruning_strategy": "threshold",
+          "pruning_params": {
+            "pruning_threshold": 2.0
+          }
+        },
+        {
+          "name": "topk_greedy",
+          "label": "topk=1",
+          "pruning_strategy": "topk",
+          "pruning_params": {
+            "top_k": 1
+          }
+        }
+      ]
+    },
+    "models": [
+      "demos/wynns_world/models/pretrained/cap5_acc70",
+      "demos/wynns_world/models/pretrained/cap5_acc80",
+      "demos/wynns_world/models/pretrained/cap5_cap4trained_acc80"
+    ]
+  },
+  "results": {
+    "threshold_strict": {
+      "n_stages": 3,
+      "stages": [
+        {
+          "n_contenders": 5,
+          "contenders_per_model": {
+            "cap5_acc80": 2,
+            "cap5_cap4trained_acc80": 2,
+            "cap5_acc70": 1
+          },
+          "n_results": 5
+        },
+        {
+          "n_contenders": 1,
+          "contenders_per_model": {
+            "cap5_cap4trained_acc80": 1
+          },
+          "n_results": 6
+        },
+        {
+          "n_results": 1
+        }
+      ]
+    },
+    "cliff_current": {
+      "n_stages": 3,
+      "stages": [
+        {
+          "n_contenders": 9,
+          "contenders_per_model": {
+            "cap5_acc80": 2,
+            "cap5_cap4trained_acc80": 6,
+            "cap5_acc70": 1
+          },
+          "n_results": 6
+        },
+        {
+          "n_contenders": 14,
+          "contenders_per_model": {
+            "cap5_cap4trained_acc80": 12,
+            "cap5_acc80": 2
+          },
+          "n_results": 6
+        },
+        {
+          "n_results": 6
+        }
+      ]
+    },
+    "threshold_lenient": {
+      "n_stages": 3,
+      "stages": [
+        {
+          "n_contenders": 18,
+          "contenders_per_model": {
+            "cap5_acc80": 3,
+            "cap5_cap4trained_acc80": 8,
+            "cap5_acc70": 7
+          },
+          "n_results": 6
+        },
+        {
+          "n_contenders": 8,
+          "contenders_per_model": {
+            "cap5_cap4trained_acc80": 4,
+            "cap5_acc80": 4
+          },
+          "n_results": 6
+        },
+        {
+          "n_results": 6
+        }
+      ]
+    },
+    "topk_greedy": {
+      "n_stages": 3,
+      "stages": [
+        {
+          "n_contenders": 1,
+          "contenders_per_model": {
+            "cap5_acc80": 1
+          },
+          "n_results": 1
+        },
+        {
+          "n_contenders": 1,
+          "contenders_per_model": {
+            "cap5_acc80": 1
+          },
+          "n_results": 2
+        },
+        {
+          "n_results": 1
+        }
+      ]
+    }
+  }
+}

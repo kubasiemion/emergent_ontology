@@ -1,0 +1,22 @@
+{
+  "description": "Cap3→cap4 incremental wiring: stage 1 departs from cap3, stage 2 extends to C3.",
+  "world": {
+    "feed": "direct",
+    "n_counts": 4,
+    "seq_len": 300,
+    "seed": 42,
+    "p_read": 0.6,
+    "n_seeds": 5
+  },
+  "matcher": {
+    "type": "incremental",
+    "departure_n_counts": 3,
+    "scorer": "deficit",
+    "top_k": 6
+  },
+  "models": [
+    "demos/wynns_world/models/pretrained/cap4_acc70",
+    "demos/wynns_world/models/pretrained/cap4_acc80",
+    "demos/wynns_world/models/pretrained/cap4_ghost"
+  ]
+}

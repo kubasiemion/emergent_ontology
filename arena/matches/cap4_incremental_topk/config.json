@@ -1,0 +1,24 @@
+{
+  "description": "Cap3→cap4 incremental wiring: extend all top-k stage-1 bases before committing, take globally best stage-2 result.",
+  "world": {
+    "feed": "direct",
+    "n_counts": 4,
+    "seq_len": 300,
+    "seed": 42,
+    "p_read": 0.6,
+    "n_seeds": 5
+  },
+  "matcher": {
+    "type": "incremental_topk",
+    "departure_n_counts": 3,
+    "scorer": "deficit",
+    "top_k": 6,
+    "pruning_strategy": "cliff",
+    "pruning_params": {"cliff_min_gap": 0.1, "min_contenders": 1}
+  },
+  "models": [
+    "demos/wynns_world/models/pretrained/cap4_acc70",
+    "demos/wynns_world/models/pretrained/cap4_acc80",
+    "demos/wynns_world/models/pretrained/cap4_ghost"
+  ]
+}
