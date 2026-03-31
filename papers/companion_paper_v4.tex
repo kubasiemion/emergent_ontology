@@ -1,0 +1,950 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1.2in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{caption}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black
+}
+
+\title{Wynn's World: The Cognitive Architecture at Work\\
+in a Minimal Counting Scenario}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The architecture proposed in \cite{architecture} (hereafter `the architecture
+paper') is implemented and tested in a minimal scenario inspired by Wynn's
+(1992) infant counting experiments. While both the mechanism and the
+interpretations of Wynn's findings remain debated, the experimental setup ---
+controlled perception, known arithmetic, measurable violation --- is a tight
+fit for a focused implementation test of the proposed architecture.
+
+A brute-force matcher searches for productive wirings between an unsupervised
+perception stream and pre-trained GRU-based predictive models, using a deficit
+scoring function as the sole evaluation criterion. The implementation produces
+results that were not designed in: underdetermination of wirings is
+encountered, not stipulated; the proto-ontology is required, not implemented
+as a feature; model succession emerges as a rank crossing in deficit tables,
+not as a scripted transition. We report multiple experimentally confirmed
+findings, including the distinction between trained and untrained spare
+capacity, two qualitatively different environmental signals, lateral detection
+of model inadequacy before new tokens arrive, succession as an inspectable
+architectural event, and robustness of all findings across scoring functions.
+All experiments are reproducible from the accompanying repository \cite{repo}.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+The architecture paper proposes a cognitive architecture built on the
+independence of perception and prediction, with a matching process as the sole
+bridge between them. This paper puts that architecture to work.
+
+The immediate question is: is this architecture demonstrable at all? Can one
+define an experimental setup basic enough to be tractable, but not so basic
+that the results are trivial?
+
+This is a difficult call. Luckily, we can follow the footsteps of some
+brilliant behavioral researchers.
+
+In 1992 Karen Wynn was working as a post-doc at the University of Arizona. She
+designed an experiment methodologically ingenious both in the arrangement and
+the measurement.
+
+In a dark room a 5-month old infant would be sitting, facing a single bright
+object: the stage. Behind them, out of sight, their parents would be present,
+providing the feeling of security, while not contaminating the infant's
+perception with social interactions. On stage, equipped with a rotating screen,
+Mickey Mouse dolls would appear and disappear, going behind and coming out from
+behind the screen. Sometimes the screen is moved away, revealing how many dolls
+are at this moment behind it.
+
+First the experiment goes through a familiarization phase. The world does not
+cheat: if two dolls have gone behind the screen and the screen goes up, two
+dolls are revealed. If two dolls were behind the screen, and one of them has
+been seen going away, removing the screen reveals one doll, as expected.
+
+Then the world begins to --- occasionally --- cheat. The count of the dolls
+behind the screen defies the rules of arithmetic.
+
+The measurement is amazingly simple: it is the temporal trace of infant's
+attention, or, in plain words, how long it looks at the revealed dolls. The
+correlation between the attention given and the arithmetical mismatch is the
+experiment result: five-month-olds, who can't speak, can't point, can barely
+move, demonstrate through looking time alone that something in their head
+expected a different count.
+
+We are going to adopt this setup almost unchanged: the unmodulated perception
+pipeline, the perception signals relating only to dolls arrivals, departures,
+and their observed count. The only adaptations we are making are increasing the
+number of dolls to better register the interesting phenomena within the
+architecture.
+
+This is a companion paper. Its goal is not to demonstrate cognitive realism.
+The goal is to show that the architecture presented in \cite{architecture},
+taken seriously as an implementation constraint, forces outcomes that the
+architecture paper claims. Where the architecture paper argues, this paper
+exhibits.
+
+\section{The Minimal World}
+\label{sec:world}
+
+\textbf{World dynamics.} Perception needs some external observables to work
+on. Following Wynn's elimination and focus, the ``world'' in our experiment has
+two events and one state, corresponding to doll arrival, doll departure, and
+dolls count, respectively.
+
+More precisely: the world maintains an integer count state. At each step, one
+of three things happens: an increment (INC), a decrement (DEC), or a read of
+the current count (C0, C1, C2, \ldots). The world deals with a limited number
+of dolls available. If there are three dolls available, the possible count
+readouts are (C0, C1, C2, C3). We call such a world a ``capacity 4 world'' or,
+in short, cap4 world.
+
+The world is realistic: the observed number of dolls never turns negative, nor
+does it surpass the total number of dolls available. DEC cannot happen if the
+current count is C0; INC is not possible if the count is at the maximum.
+
+Otherwise the world works as expected, emitting an INC event when increasing
+the state, and a DEC upon decreasing it.
+
+Following the correspondence to the real world setup, the ``capacity'' of the
+world is a parameter that can be changed: another doll can be introduced,
+moving this limit of the world and making another readout available.
+
+A cap3 world has count states \{0, 1, 2\} and token vocabulary \{INC, DEC, C0,
+C1, C2\}. A cap4 world has count states \{0, 1, 2, 3\} and token vocabulary
+\{INC, DEC, C0, C1, C2, C3\}. A cap5 world extends further.
+
+The infant in the dark room observes the scene. If it observes a doll going
+in --- we model this as an INC perception token. A doll goes out --- a DEC.
+Observing dolls on the scene results in different tokens C0, C1, \ldots,
+depending on the dolls count. These are not ``counts'' --- they are just
+distinct tokens. We label them the way we do because \textit{we} know. The
+infant does not. At least not initially.
+
+There is nothing more in this world. The infant is concerned only with tracking
+numerosity of a single category.
+
+\section{Implementation}
+\label{sec:implementation}
+
+\textbf{Boxed predictive models.} The architecture calls for perception to be
+contrasted with and played against a portfolio of predictive automata. In our
+implementation each automaton is a GRU-based recurrent network, pre-trained in
+isolation on sequences from its training world. The model exposes a fixed-size
+token dictionary and returns probability distributions over next tokens. It is
+important that the dictionary and the probability distribution are exposed
+uniformly: even if internally some tokens correspond to state transitions, and
+others to state readouts, this distinction is not published in any way outside
+the model. The matcher sees only the dictionary size and the output
+distributions.
+
+The full encapsulation of the internal predictive logic of a model allows for
+inclusion of a fully deterministic symbolic counter as an interesting benchmark
+and a useful sanity check.
+
+\textbf{Curriculum training.} Models are trained in stages:
+cap1$\to$cap2$\to$cap3$\to$cap4, each stage consolidating before the next.
+Without curriculum, the GRU achieves similar accuracy but with internally
+scrambled count state representations.
+
+Three model variants are used: ``native,'' with full curriculum pre-training;
+``ghost,'' with pre-training stopped early; and ``symbolic'' --- a
+deterministic benchmark.
+
+Most of the actual experiments use three models:
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+Model & Architecture & Training & Purpose \\
+\midrule
+acc70 & cap4 GRU & Full curriculum, $\sim$70\% accuracy & Lower-quality baseline \\
+acc80 & cap4 GRU & Full curriculum, $\sim$80\% accuracy & Primary experimental model \\
+ghost & cap4 GRU (or cap5) & Curriculum stopped early & Tests adaptive potential \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The matcher.} Following the architecture paper, the system must find
+the wirings between the perception stream and the predictive models that result
+in low predictive error. In this experiment this is done brute-force /
+incremental: initially the matcher evaluates every possible wiring (permutation
+of perception tokens to model tokens) against the perception stream. Each
+wiring is scored by deficit: the cumulative shortfall between the model's
+predicted probability for the actual next token and the uniform baseline. Upon
+expansions of the working dictionaries, the matching process evaluates possible
+extensions of its current portfolio of wirings.
+
+The matcher's internal state --- the structure that makes it possible to ask
+``what if perception token X maps to model token Y?'' before any mapping
+exists --- is what the architecture paper calls the proto-ontology. In this
+implementation, it is the mapping vector between perception tokens and model
+tokens: initially unassigned, populated by the matching process, and retained
+as the fossilized wiring. The matcher is stateful not only for the sake of the
+matching process: retaining the predictively performant wirings is necessary
+both for exploitation and for the incremental adaptation.
+
+The brute-force search is feasible here because the world is small. It is not a
+requirement of the architecture --- it is a choice that makes the matcher's
+behavior fully inspectable.
+
+\textbf{Deficit and the renormalized distribution.} The predictive deficits of
+the available wirings must be calculated in order to identify the best ones.
+The architecture paper calls for a strict isolation between the internal
+machineries of the perception, the prediction, and the matcher. This makes the
+design of the deficit function an interesting exercise. The function must be
+oblivious to the internal ontologies of the models, should be independent of
+history, and should be simple.
+
+Using the uniform distribution over the model's token dictionary as a baseline,
+we define the predictive error at any point as $\max(1/n_{\mathrm{tokens}} -
+p_{\mathrm{pred}}(\mathrm{actual\_next}),\ 0)$, and the predictive deficit as
+the error summed over steps, averaged over sequences. A wiring that predicts no
+better than chance accumulates maximum deficit; a wiring whose model
+confidently predicts the correct next token accumulates zero.
+
+The choice of this specific deficit formula affects what is visible but not
+what is true. As shown in Appendix~\ref{app:findings}, the architectural
+findings hold across scorer families, though different scorers expose different
+aspects of the deficit landscape.
+
+\textbf{Cliff pruning.} After scoring all wirings, contenders are selected by
+finding the largest gap in the sorted deficit list. Everything below the gap is
+retained. This is adaptive --- it reads the structure of the data rather than
+imposing a fixed threshold. The contender count is the matcher's epistemic
+humility about which wiring will generalize.
+
+\textbf{Incremental wiring.} When the world expands (e.g., cap3$\to$cap4),
+the matcher does not restart from scratch. It extends each surviving contender
+by searching only over the unassigned model tokens for the new perception
+token. Fossilized wirings constrain the search space.
+
+\textbf{Experimental conditions.} Unless otherwise noted: n\_seeds=5,
+seq\_len=300, seed=42, p\_read=0.6.
+
+\section{The Matcher Finds Correct Wirings}
+\label{sec:matcher}
+
+We begin the experiment with the world that contains two dolls. At most two
+dolls are visible at any moment. Three dolls visible are not possible --- there
+are not that many dolls in this world. The world does not cheat: the arithmetic
+is truthful, the number of dolls does not decrease below zero nor does it
+increase over two.
+
+The infant tries to align its predictive potential with perception. In Wynn's
+terms this corresponds to \textit{familiarization}.
+
+The matching process arrives at the following ranking of the possible wirings:
+
+\begin{center}
+\begin{tabular}{rlrrrrrr}
+\toprule
+Place & Deficit & Model & INC & DEC & C0 & C1 & C2 \\
+\midrule
+1  & 0.0000 & cap4\_ghost  & INC & DEC & C0 & C1 & C2 \\
+2  & 0.0102 & cap3\_acc70  & INC & DEC & C0 & C1 & C2 \\
+3  & 0.0136 & cap4\_ghost  & DEC & INC & C2 & C1 & C0 \\
+4  & 0.0287 & cap3\_acc80  & DEC & INC & C2 & C1 & C0 \\
+5  & 0.0573 & cap4\_acc80  & DEC & INC & C2 & C1 & C0 \\
+6  & 0.0712 & cap3\_acc70  & DEC & INC & C2 & C1 & C0 \\
+7  & 0.0789 & cap3\_acc80  & INC & DEC & C0 & C1 & C2 \\
+8  & 0.2405 & cap4\_acc80  & INC & DEC & C0 & C1 & C2 \\
+9  & 0.3025 & cap4\_acc80  & INC & DEC & C0 & C1 & C3 \\
+10 & 0.3857 & cap4\_acc80  & DEC & INC & C3 & C1 & C0 \\
+11 & 1.5831 & cap3\_acc70  & C1  & DEC & C0 & INC & C2 \\
+12 & 1.6048 & cap4\_acc80  & INC & DEC & C1 & C2 & C3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+There are three things to observe about this table.
+
+\textbf{The Cliffs.} We have truncated it at the twelfth position to make the
+cliffs visible. The first cliff is between position 7 and position 8. The
+second cliff, between positions 10 and 11, is an order of magnitude steeper.
+Any wiring up to the first cliff is a reasonable contender. Any wiring beyond
+the second cliff can be discarded. The fate of the wirings in-between depends
+on the system's appetite for adaptability.
+
+\textbf{The Symmetry.} There are two families of wirings which perform well:
+the ``direct'' wirings, and ``mirror-image'' wirings. The direct wirings are
+what we expected: the world's INC event is mapped to the model's INC, DEC to
+DEC, and the numerosities are mapped directly. The mirror-image wirings are
+only obvious in hindsight: the world has a reflection symmetry which the mapper
+faithfully reports. After truncating the contenders list at the cliff, the
+system is holding two contradictory-but-equal bets about where the world's
+count axis sits in the model's vocabulary.
+
+\begin{center}
+\begin{tabular}{lrrrrrr}
+\toprule
+Wiring family & INC$\to$ & DEC$\to$ & C0$\to$ & C1$\to$ & C2$\to$ & Best deficit \\
+\midrule
+Canonical         & INC & DEC & C0 & C1 & C2 & 0.0000 \\
+Reverse-canonical & DEC & INC & C2 & C1 & C0 & 0.0136 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In the context of architecture paper claims: the matcher does not care for nor
+is aware of the internal logic of a model. Operational performance is all the
+signal. The architectural principle has determined what has unfolded.
+
+\textbf{The Ghost.} The best performing wiring connects to the model with an
+\textit{untrained} C3 pad. The perfect performance of this model in the cap2
+world is a surprise, and can probably be attributed to its internal spare
+capacity. As demonstrated in the next section, however, betting solely on this
+model in a world that may evolve would be perilous.
+
+\textbf{Note on the deficit function.} The specific formula we have chosen
+involves a very simple renormalization of the returned probability distribution,
+which depends on the wired dictionary size. Without renormalization, a model
+that spreads mass across unwired pads would appear worse than it is. This is
+the only place in the architecture where any calibration of a ``capN model''
+to a ``capM world'' happens.
+
+\section{The Arrival of the Third Doll}
+\label{sec:thirddoll}
+
+\textbf{Incremental familiarization.} It had taken approximately five months
+for the infants from Wynn's experiment to arrive at a developmental stage where
+the mismatch on counts up to 2 would trigger the observed behavior. We have no
+idea how much more time it would take them to display similar behavior with up
+to 3 dolls. For us, however, this is a very natural next step in the
+experiment.
+
+When the world expands incrementally (cap3$\to$cap4$\to$cap5), fossilized
+wirings from the previous stage constrain the search at the next stage. The
+effect is dramatic.
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+Stage & World & Evaluations per model & Brute-force equivalent \\
+\midrule
+Stage 1 & cap3 (5 tokens) & $P(7,5) = 2{,}520$ & --- \\
+Stage 2 & cap4 (6 tokens) & $9 \times 2 = 18$ contenders & $P(7,6) = 5{,}040$ \\
+Stage 3 & cap5 (7 tokens) & $14 \times 1 = 14$ contenders & $P(7,7) = 5{,}040$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At stage 2, instead of evaluating 5,040 wirings from scratch, the matcher
+extends 9 surviving contenders over 2 remaining model tokens: 18 evaluations.
+At stage 3, 14 extensions with 1 remaining token each. The fossilized wirings
+are not just records --- they are search constraints. This is the computational
+consequence of fossilization that the architecture paper describes as ``the
+system's ontological commitments.''
+
+The incremental strategy works only as long as the final contenders survive the
+pruning at the earlier stages. We found that our simple ``cliff'' heuristic
+performs well. We do not go into detailed study of the cutoff regimes to keep
+this paper focused.
+
+\textbf{Adaptive potential.} We model the arrival of the third doll --- the
+evolution of the world --- as a simple change to the perception token
+sequences: we include C3 as a new token in the perception vocabulary, and we
+move the constraint on the appearance of INC from C2 to C3 (allowing for
+C2$\to$C3 transitions and forbidding increases beyond C3). We run the matching
+competition on those contenders from the cap3 pool which have what the
+architecture paper calls adaptive potential (i.e., at least one unwired pad).
+
+In this pool we have a ``native'' model, pre-trained to count up to three, and
+a ``ghost'' model. The ghost model has the same architecture as a native model
+(same number of tokens, same GRU) but its curriculum was stopped early. A cap4
+ghost trained only to cap3 has the C3 slot in its vocabulary, but C3 received
+zero gradient during training. The slot exists architecturally but carries no
+representation. Formally, until tested against the cap4 world, both models
+promise the same adaptive potential.
+
+\textbf{On the home world (cap3), the ghost wins:}
+
+\begin{center}
+\begin{tabular}{rlll}
+\toprule
+Place & Deficit & Model & Wiring \\
+\midrule
+1 & \textbf{0.0000} & cap4\_ghost  & canonical \\
+2 & 0.0136          & cap4\_ghost  & reverse-canonical \\
+3 & 0.0577          & cap4\_acc80  & reverse-canonical \\
+4 & 0.3795          & cap4\_acc80  & canonical \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The ghost's relaxed interior representation (cap4 architecture trained to cap3
+boundary) outperforms native cap3 models on their own world.
+
+\textbf{On the extended world (cap4), the ghost collapses:}
+
+\begin{center}
+\begin{tabular}{rllll}
+\toprule
+Place & Deficit & S1 Base & Model & Wiring \\
+\midrule
+1 & \textbf{0.0400} & 0.3795 & cap4\_acc80  & canonical \\
+2 & 3.1905          & 0.5072 & cap4\_acc80  & shifted \\
+3 & 7.0694          & 0.0000 & cap4\_ghost  & canonical \\
+4 & 8.6570          & 0.0136 & cap4\_ghost  & reverse-canonical \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The ghost's leading wiring deficit goes from 0 to over 7. The ghost's C3 slot
+is inert. No valid wiring exists --- all ghost wiring attempts on cap4 score
+$\geq 6.36$.
+
+We see a dramatic example of what the architecture paper calls wiring and model
+succession. The value of retaining contenders is demonstrated: the correct path
+forward was not the best current wiring but a weaker contender with the right
+base for extension.
+
+\textbf{Wiring succession (to the same model).} The architecture paper demands
+that we demonstrate succession between competing wirings to the same model.
+This is clearly visible in the scores of the cap4\_acc80 model against cap3
+and cap4 worlds:
+
+\medskip
+\noindent\textit{2-Dolls World}
+\begin{center}
+\begin{tabular}{rlrrrrr}
+\toprule
+Deficit & Model & INC & DEC & C0 & C1 & C2 \\
+\midrule
+0.0573 & cap4\_acc80 & DEC & INC & C2 & C1 & C0 \\
+0.2405 & cap4\_acc80 & INC & DEC & C0 & C1 & C2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent\textit{3-Dolls World}
+\begin{center}
+\begin{tabular}{rlrrrrrr}
+\toprule
+Deficit & Model & INC & DEC & C0 & C1 & C2 & C3 \\
+\midrule
+0.0400 & cap4\_acc80 & INC & DEC & C0 & C1 & C2 & C3 \\
+0.9823 & cap4\_acc80 & DEC & INC & C3 & C2 & C1 & C0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The mirror-image wiring performs better in the smaller world, but collapses
+when the world extends. The model remains, but a different wiring takes the
+lead.
+
+\section{Two Kinds of Environmental Change}
+\label{sec:twokinds}
+
+Intuitively, there is a difference for an infant between observing something
+\textit{new} and observing something \textit{wrong}. The very reason for the
+familiarization phase in Wynn's experiment is to remove the \textit{new} and
+isolate the \textit{wrong}. In our simple setup, this intuition becomes
+tractable. The architecture paper describes three signals ruling the system's
+mechanics: the predictive error, the adaptive potential, and the presence of
+unwired perception tokens (which the paper calls the ``cognitive itch'').
+
+Let us narrow our focus to the two models from the previous sections: the
+``native'' cap4\_acc80, and the cap4\_ghost. The cap3 world has been
+``familiarized'': optimal wirings to both models have been identified and
+fossilized (see the score table in Section~\ref{sec:matcher}).
+
+In the previous section we have seen the outcome of the re-wiring effort. Now
+let us inspect in some detail the ontological crisis as it unfolds, but before
+it is overcome. What are the signals available when the world changes, which
+could guide the adaptation?
+
+\textbf{The New.} The infant has familiarized the world of two dolls. The
+parent, or the nice researcher, has brought another doll. The world, as
+reported by the perception stream, offers new phenomena: there is now a C3
+perception token available, and INC can happen when the count state is 2. How
+do the wirings fossilized at cap3 perform?
+
+It turns out that even if the new token is filtered from the evaluation stream,
+the ghost still fails. We verified this directly: filtering all C3 tokens from
+the evaluation stream, the ghost still fails with a deficit of 3.3845 --- nearly
+half of its unfiltered deficit of 7.0694. The boundary dynamics alone, without
+any new token present, are sufficient to expose model inadequacy. Where the
+architecture paper talks about ``blindness'' to the arrival of new tokens, we
+identify a ``lateral detection'' of the world change. Its specific form is
+determined by the nature of our experimental setup, but in general we expect
+this phenomenon to stem from the predictive nature of the models and to occur
+often.
+
+A simple simulation shows how the prediction deficits change when the world
+extends, but the wirings remain:
+
+\begin{center}
+\begin{tabular}{rrrrrrrr}
+\toprule
+Place & Old Deficit & New Deficit & Model & INC & DEC & C0 & C1 \\
+\midrule
+1 & 0.3795 &  0.0400 & cap4\_acc80 & INC & DEC & C0 & C1 \\
+2 & 0.0577 & 10.3050 & cap4\_acc80 & DEC & INC & C3 & C2 \\
+3 & 0.0000 &  7.0694 & cap4\_ghost & INC & DEC & C0 & C1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The one wiring of the native counter performs well, even significantly
+improving its performance --- it correctly predicts the INC/DEC dynamics at
+the new boundary without observing the intermediate count state. The additional
+world structure disambiguates this wiring. The inverse wiring collapses. The
+ghost counter collapses too --- it has never seen INC events happening when the
+count is C2.
+
+Decomposing the deficit by predicted token type reveals a directed gradient:
+
+\begin{center}
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+Wiring & INC & DEC & C0 & C1 & C2 & C3 & Total \\
+\midrule
+ghost canonical  & 0.0000 & 0.0000 & 0.0000 & 0.0300 & 3.3545 & 3.6849 & 7.0694 \\
+/step   & 0.0000 & 0.0000 & 0.0000 & 0.0001 & 0.0120 & 0.0297 &        \\
+ghost reverse    & 0.0000 & 0.0000 & 0.0136 & 0.2802 & 4.3211 & 4.0422 & 8.6570 \\
+/step   & 0.0000 & 0.0000 & 0.0001 & 0.0008 & 0.0154 & 0.0326 &        \\
+acc80 canonical  & 0.0000 & 0.0000 & 0.0000 & 0.0400 & 0.0000 & 0.0000 & 0.0400 \\
+/step   & 0.0000 & 0.0000 & 0.0000 & 0.0001 & 0.0000 & 0.0000 &        \\
+acc80 reverse    & 0.0000 & 0.0000 & 0.0549 & 1.1345 & 5.0430 & 4.0725 & 10.3050 \\
+/step   & 0.0000 & 0.0000 & 0.0004 & 0.0031 & 0.0180 & 0.0328 &        \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The results are telling: the error accumulates at the C2/C3 boundary, except
+for the one wiring of the native model that happens to be aligned with the
+extension. The other wiring of the native model performs the worst. The ghost
+model fails in a more symmetric fashion. It tolerates orientation reversal
+because it has nothing at C3 to lose; the native model's wirings split because
+it does.
+
+The lateral detection provides a structured fingerprint of the world change,
+and is accompanied by the ``itch'' of the arrival of a new, unwired perception
+token. It turns out that the infant has surprisingly rich data prior to
+initiating the search for productive extensions of its fossilized wirings.
+
+\textbf{The Wrong.} Let us now consider the situation where the world starts
+``cheating.'' There is nothing new in the world or in the perception stream,
+but 10\% of the world read events report the wrong count (C$_k$ replaced by a
+random C$_j$, $j \neq k$). The ranking of the prediction deficit of the
+wirings in the portfolio changes:
+
+\begin{center}
+\begin{tabular}{rrrlrrrrr}
+\toprule
+Place & S1 Def & Viol Def & Model & INC & DEC & C0 & C1 & C2 \\
+\midrule
+1 & 0.0136 & 1.1062 & cap4\_ghost & DEC & INC & C2 & C1 & C0 \\
+2 & 0.0000 & 1.1137 & cap4\_ghost & INC & DEC & C0 & C1 & C2 \\
+3 & 0.0577 & 1.3079 & cap4\_acc80 & DEC & INC & C2 & C1 & C0 \\
+4 & 0.3795 & 1.6938 & cap4\_acc80 & INC & DEC & C0 & C1 & C2 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In contrast with the world extension, now all wirings' predictive scores
+degrade. There are no obvious candidates for a wiring extension. Moreover,
+there are no new tokens in the perception stream. For our simple system the
+only way to improve the predictive performance is to reset the predictive
+portfolio and re-bootstrap. A system with a more elaborate perception pipeline
+might try to focus on identifying any missing perception details. This is, in
+our picture, the origin of the ``heightened attention'' of the infants in
+Wynn's experiment --- something more basic than ``surprise.'' Under the
+experiment's conditions there is no productive adaptation path available. What
+remains is re-processing.
+
+\textbf{The distinction.} The world extension and the screen violation are
+therefore distinguishable not just in magnitude but in architecture: extension
+produces a directed signal that concentrates at the training boundary and
+discriminates in favour of the model with trained capacity. Violation produces
+a uniform, inverted signal that carries no information about which model should
+succeed. The signatures are very different. The baby can in principle
+distinguish between seeing something new and being fooled.
+
+Note: these patterns repeat themselves when the parent brings yet another doll
+--- as we have tested for the cap4$\to$cap5 transition.
+
+\section{Discussion}
+\label{sec:discussion}
+
+The original purpose of the paper was to provide a toy model of the cognitive
+architecture described in \cite{architecture}. Modelling the streamlined world
+of Wynn's experiment has allowed us to capture the architecture in a very
+mechanistic form. Experimenting with actual implementations, however simple,
+brought to light a few new aspects, and refined our views --- still staying
+truthful to the architecture paper. The architecture paper argues that certain
+outcomes must follow from certain principles. This paper puts those principles
+to work and reports what happened.
+
+The underdetermination wasn't stipulated --- it appeared in the deficit table
+at stage 1, where the ghost and its mirror image both scored near zero. The
+succession wasn't programmed --- it fell out of comparing two ranked deficit
+lists across stages. The findings are the architecture paper's claims; the
+implementation is their witness. Appendix~\ref{app:findings} contains a full
+list of observations and findings that had not been pre-programmed by the
+architecture paper.
+
+\textbf{What the implementation forced.}
+
+\textit{The proto-ontology.} The matching process requires a working state: a
+data structure that records, for each perception token, which model token it is
+currently mapped to. This was not designed in as a named architectural
+component. It was required because the incremental wiring strategy needed
+somewhere to record which assignments were fossilized. The architecture paper
+argues that proto-ontology is a requirement of any perception-prediction
+coupling architecture. The implementation confirms: there is no way to
+implement incremental wiring without something that plays this role. Without
+retaining the top wirings fossilized in the proto-ontology (i.e., the
+matcher's state), the whole matching process would be pointless, and
+incremental adaptation impossible.
+
+\textit{The interface principle} is confirmed as a functional requirement: when
+violated, the matching problem becomes unsolvable
+(Appendix~\ref{app:findings}, Finding~13).
+
+\textit{The ghost result.} The architecture paper distinguishes architectural
+capacity from trained capacity. The ghost has a slot for C3 but no trained
+representation behind it. This distinction was expected. What the
+implementation reveals is the magnitude: a deficit gap of 7.03 between ghost
+and native on the extended world, while the gap on the home world runs in the
+other direction. The numerical gap is not a design choice --- it reflects how
+severely the GRU's hidden state is corrupted when an untrained slot is forced
+into active use. The architecture paper describes this as a prediction-driven
+discrimination signal. The 7.03 is that signal's amplitude.
+
+\textit{Lateral detection.} This was not predicted by the architecture paper
+and was not a design goal. The implementation produced it as a side effect of
+routing all signals through a single deficit scorer. The ghost's failure is
+visible before the new token appears because the INC/DEC dynamics at the
+training boundary are already wrong. As described in
+Section~\ref{sec:twokinds}, this was discovered by running the experiment, not
+by reasoning about it in advance. The architecture paper describes the
+cognitive itch (Signal~2) as the primary trigger for wiring search. The
+implementation adds a prior signal --- predictive deficit degradation appears
+before the cognitive itch. The architecture's self-diagnosis is earlier than
+the architecture paper describes.
+
+\textbf{What remains open.}
+
+The world is minimal. Three to five count states, GRU-based models, brute-force
+search. The architecture paper claims at Marr's computational level; this paper
+exhibits at the algorithmic and implementation levels for one scenario. Whether
+the findings generalize to richer worlds, larger models, and approximate
+matching is an empirical question.
+
+Whether the reproducible findings in a minimal world constitute theory
+confirmation or illustration is the appropriate skeptical question. The
+architecture paper's own criterion is that the architecture should make
+observable predictions in implemented systems. These findings are that
+observation. The reader is in the better position to judge whether the
+threshold has been crossed.
+
+The brute-force matcher is the control condition. It establishes what the
+architecture can find. Approximate matchers are the scaling question, but you
+cannot evaluate them without first knowing what the correct answer is.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+The implementation forces things. The proto-ontology is forced by the need for
+an incremental state. The contender pool is forced by the mathematics of world
+extension --- the correct model cannot always be the current leader. The
+succession is forced by the same scoring function that tracked performance on
+the home world. Lateral detection is forced by the GRU's boundary dynamics.
+None of these were designed. They were encountered.
+
+The architecture paper argues these outcomes follow from three independence
+principles: perception doesn't know the prediction vocabulary, prediction
+doesn't know the perception stream, and matching evaluates the coupling without
+access to either interior. This paper implements those principles and reports
+what follows. The cliff heuristic embodies the specific epistemic stance the
+architecture requires: intermediate scores are unreliable discriminators, and
+preserving minority contenders is the cost of remaining open to a world that
+has not yet finished changing.
+
+The code and all experiments are available in the accompanying repository
+\cite{repo}.
+
+%% ============================================================
+\appendix
+\renewcommand{\thesection}{Appendix \Alph{section}}
+%% ============================================================
+
+\section{Complete Findings Register}
+\label{app:findings}
+
+The following findings emerged from the implementation. Items marked [body] are
+presented in the main text; items marked [appendix] are documented here with
+supporting data. All are reproducible from the repository.
+
+\subsection*{Architectural findings}
+
+\noindent\textbf{F1. The matcher recovers correct wirings.}
+Brute-force search over all permutations identifies the two structurally valid
+wiring families (canonical and reverse-canonical) across all models and seeds.
+[body, Section~\ref{sec:matcher}]
+
+\medskip
+\noindent\textbf{F2. Underdetermination is encountered, not stipulated.}
+The two valid families reflect the counting world's reflection symmetry. The
+matcher reports this faithfully --- it was not designed to find symmetry.
+[body, Section~\ref{sec:matcher}]
+
+\medskip
+\noindent\textbf{F3. The deficit landscape has cliff structure.}
+Wirings cluster into quality tiers separated by sharp gaps. The cliff between
+valid and invalid wirings is an order of magnitude steeper than the gap between
+valid families. [body, Section~\ref{sec:matcher}]
+
+\medskip
+\noindent\textbf{F4. Fossilization collapses the search space.}
+Incremental wiring reduces stage-2 search from $P(7,6) = 5{,}040$ evaluations
+to 18, and stage-3 from $P(7,7) = 5{,}040$ to 14. Fossilized wirings are
+search constraints, not just records. [body, Section~\ref{sec:thirddoll}]
+
+\medskip
+\noindent\textbf{F5. Architectural spare capacity without trained knowledge is
+not adaptive potential.}
+The ghost model (same architecture, curriculum stopped early) wins on the home
+world but collapses on the extended world with a deficit gap of 7.03. The slot
+exists but carries no representation. Replicated at cap5 scale.
+[body, Section~\ref{sec:thirddoll}]
+
+\medskip
+\noindent\textbf{F6. Model succession is an inspectable rank crossing.}
+The ghost leads at stage 1 (deficit 0.0000); the native model leads at stage 2
+(deficit 0.0400). The crossing is visible in the deficit tables without
+additional diagnostics. [body, Section~\ref{sec:thirddoll}]
+
+\medskip
+\noindent\textbf{F7. Wiring succession occurs within the same model.}
+The reverse-canonical wiring of cap4\_acc80 outperforms its canonical wiring
+on the cap3 world (0.0577 vs 0.2405). On the cap4 world, the canonical wiring
+wins (0.0400 vs 0.9823). The model remains; the wiring changes.
+[body, Section~\ref{sec:thirddoll}]
+
+\medskip
+\noindent\textbf{F8. The correct successor was not the stage-1 leader.}
+The acc80 canonical wiring that wins stage 2 (deficit 0.0400) had stage-1
+deficit 0.3795 (rank 4). Committing to the stage-1 best would have yielded
+deficit 10.31 at stage 2. [body, Section~\ref{sec:thirddoll}]
+
+\subsection*{Signal structure findings}
+
+\noindent\textbf{F9. World extension produces a directed,
+boundary-concentrated signal.}
+The ghost's deficit concentrates at C2 and C3 (98.9\% of total). The
+contamination gradient originates at the untrained slot and decays with
+distance from the boundary. Replicated at cap5 (C3/C4 boundary).
+[body, Section~\ref{sec:twokinds}]
+
+\medskip
+\noindent\textbf{F10. Screen violation produces a uniform, inverted signal.}
+Under 10\% count corruption, all wirings degrade. The ghost outperforms the
+native (1.11 vs 1.69). Selecting on violation signal would promote the wrong
+model. [body, Section~\ref{sec:twokinds}]
+
+\medskip
+\noindent\textbf{F11. The inversion holds across all contenders.}
+Scoring all 18 stage-1 wirings under violation, ghost wirings dominate the top
+ranks. The native acc80 canonical wiring --- the one that wins world extension
+--- ranks 7th. The pattern replicates at cap5. [appendix]
+
+\medskip
+\noindent\textbf{F12. Lateral detection: model inadequacy is detectable before
+new tokens arrive.}
+Filtering C3 from the evaluation stream, the ghost still fails (deficit 3.3845
+vs native's 0.0400). Boundary dynamics leak through INC/DEC before the
+explicit new token appears. [body, Section~\ref{sec:twokinds}]
+
+\subsection*{Implementation findings}
+
+\noindent\textbf{F13. The interface principle is a functional requirement.}
+Same model weights, two modes: bypass\_on scores 0.0518; bypass\_off scores
+6.0289 with scrambled wiring. Violating the interface makes matching
+unsolvable. [appendix]
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Mode & Best deficit & Best wiring \\
+\midrule
+bypass\_on  & \textbf{0.0518} & canonical \\
+bypass\_off & 6.0289          & scrambled \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\noindent\textbf{F14. Repeg degrades matching monotonically.}
+Re-pegging the GRU hidden state toward trained count attractors during matching
+hurts performance at every tested alpha value (0.0 $\to$ 0.1 $\to$ 0.2 $\to$
+0.5: deficit 0.05 $\to$ 1.38 $\to$ 2.27 $\to$ 3.25). The model's internal
+coordinate system is its own business. [appendix]
+
+\medskip
+\noindent\textbf{F15. Curriculum training is necessary for clean internal
+geometry.}
+Without staged curriculum, the GRU achieves similar accuracy ($\sim$80\%) but
+with internally scrambled count state embeddings. The deficit landscape becomes
+flatter and less discriminating. [appendix]
+
+\medskip
+\noindent\textbf{F16. All findings are robust across scoring functions.}
+Ghost failure ordering and succession crossing hold under three scorers: deficit
+(hinge), tiered (stepped penalty), and cross-entropy (NLL). The succession
+event is in the structure, not in the scorer. [appendix]
+
+\begin{center}
+\begin{tabular}{llll}
+\toprule
+Model    & deficit & tiered & cross\_entropy \\
+\midrule
+symbolic & 0.0000  & 0.0000 & 283.7 \\
+native   & 0.0400  & 1.80   & 382.1 \\
+ghost    & 7.0694  & 219.2  & 537.9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Scorer        & Stage-1 leader      & Stage-2 leader      \\
+\midrule
+deficit       & ghost (0.0000)      & native (0.0400)     \\
+tiered        & ghost (0.0000)      & native (1.80)       \\
+cross\_entropy & ghost (374.0)      & native (382.1)      \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Cross-entropy reveals what the deficit threshold hides: the symbolic model
+(283.7) and native model (382.1) are distinguishable, and wrong wirings are
+punished exponentially (871--998 vs 4.33--5.27 under deficit).
+
+\medskip
+\noindent\textbf{F17. Model quality affects discrimination sharpness.}
+acc70 produces 8 stage-1 contenders vs acc80's 4. Lower quality yields a
+flatter deficit landscape with smaller gaps. acc70's best stage-1 wiring is
+shifted (non-canonical) --- a different training seed broke the symmetry
+differently. [appendix]
+
+\medskip
+\noindent\textbf{F18. The contender pool is an existential requirement.}
+Four pruning policies tested on cap5 three-stage succession: [appendix]
+
+\begin{center}
+\small
+\begin{tabular}{lllll}
+\toprule
+Policy & Native contenders & Ghost contenders & Final winner & Final deficit \\
+\midrule
+threshold=0.05  & \textbf{0} & 1  & ghost            & 2.8887 \\
+cliff (current) & 2          & 12 & \textbf{native}  & 0.0391 \\
+threshold=2.0   & 4          & 4  & \textbf{native}  & 0.0391 \\
+topk=1          & 1          & 0  & native$\dagger$  & 18.4069 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Aggressive pruning (threshold=0.05) eliminates the correct model before the
+decisive stage. Greedy commitment (topk=1) locks onto a path that yields
+catastrophic deficit. The cliff policy succeeds because it reads the
+distribution rather than imposing a fixed threshold. The contender set is the
+architecture's hedge against world changes it has not yet observed.
+
+\section{Experimental Conditions}
+\label{app:conditions}
+
+All experiments: n\_seeds=5, seq\_len=300, seed=42, p\_read=0.6. Deficit
+scorer: $\max(1/n_{\mathrm{tokens}} - p_{\mathrm{pred}}(\mathrm{actual\_next}),
+0)$ summed over steps, averaged over sequences.
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llll}
+\toprule
+Experiment & Arena & Models & World \\
+\midrule
+Underdetermination   & cap3\_ghost\_games          & 3$\times$cap3, ghost, cap4\_acc80      & cap3 \\
+GRU bypass           & cap4\_bypass\_compare       & cap4\_acc80 (two modes)                & cap4 \\
+Repeg sweep          & cap4\_repeg\_sweep          & cap4\_acc80 (4 alphas), symbolic       & cap4 \\
+Ghost (cap4)         & cap4\_ghost\_games          & ghost, native, symbolic                & cap4 \\
+Ghost (cap5)         & cap5\_ghost\_games          & cap5\_ghost, cap5\_acc70, cap5\_acc80  & cap5 \\
+Error structure      & cap4\_error\_structure      & ghost, native    & cap4 (A) / cap3+corrupt (B) \\
+Error structure      & cap5\_error\_structure      & ghost, native    & cap5 (A) / cap4+corrupt (B) \\
+Lateral detection    & cap4\_lateral\_detection    & ghost, native    & cap4 (filtered/unfiltered) \\
+Succession (2-stage) & cap4\_succession            & ghost, cap4\_acc80   & cap3$\to$cap4 \\
+Succession (3-stage) & cap5\_incremental           & ghost, cap5\_acc70, cap5\_acc80  & cap3$\to$cap4$\to$cap5 \\
+Model quality        & cap4\_incremental\_topk     & ghost, acc70, acc80  & cap3$\to$cap4 \\
+Scorer robustness    & cap4\_ghost\_games\_scorers & ghost, native, symbolic  & cap4 \\
+Scorer robustness    & cap4\_succession\_scorers   & ghost, cap4\_acc80   & cap3$\to$cap4 \\
+\bottomrule
+\end{tabular}}
+\end{center}
+
+Full deficit tables for all experiments are available in the repository.
+
+\section{Model Specifications}
+\label{app:models}
+
+All learned models share the same architecture: token embedding dimension 8,
+GRU hidden dimension 16, one GRU layer. Token vocabulary: INC (0), DEC (1),
+C0\ldots C$_{n-1}$ (2\ldots$n$+1), giving $n_{\mathrm{tokens}} =
+n_{\mathrm{counts}} + 2$.
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrllr}
+\toprule
+Model & $n_{\mathrm{tok}}$ & $n_{\mathrm{cnt}}$ & Emb & GRU & Training & Accuracy \\
+\midrule
+cap3\_acc70              & 5 & 3 & 8 & 16 & Full cap3 curriculum     & $\sim$70\% \\
+cap3\_acc80              & 5 & 3 & 8 & 16 & Full cap3 curriculum     & $\sim$80\% \\
+cap4\_acc70              & 6 & 4 & 8 & 16 & Full cap4 curriculum     & $\sim$70\% \\
+cap4\_acc80              & 6 & 4 & 8 & 16 & Full cap4 curriculum     & $\sim$80\% \\
+cap4\_ghost              & 6 & 4 & 8 & 16 & Cap3 curriculum only     & $\sim$80\% on cap3 \\
+cap5\_acc70              & 7 & 5 & 8 & 16 & Full cap5 curriculum     & $\sim$70\% \\
+cap5\_acc80              & 7 & 5 & 8 & 16 & Full cap5 curriculum     & $\sim$80\% \\
+cap5\_cap4trained\_acc80 & 7 & 5 & 8 & 16 & Cap4 curriculum only     & $\sim$80\% on cap4 \\
+symbolic\_cap4           & 6 & 4 & --- & --- & By construction        & 100\% \\
+\bottomrule
+\end{tabular}}
+\end{center}
+
+\begin{thebibliography}{9}
+
+\bibitem{wynn1992}
+Wynn, K. (1992). Addition and subtraction by human infants. \textit{Nature},
+358, 749--750.
+
+\bibitem{architecture}
+[Architecture paper --- arXiv ID to be assigned at simultaneous submission]
+
+\bibitem{repo}
+Repository: \url{https://github.com/kubasiemion/cognitive-architecture/tree/main/demos/wynns_world}
+
+\end{thebibliography}
+
+\end{document}
