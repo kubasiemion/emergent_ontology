@@ -1,14 +1,17 @@
 # Wynn's World
 
-Companion repository for: **[paper title]** ([link])
+Companion repository for two inter-related papers:
 
-All experiments in the paper are reproducible from this repository. Results run in under a minute on CPU.
+- **[Architecture paper]** *A Cognitive Architecture That Produces Teleosemantic Content as Fossilized Wiring Between Independent Perception and Prediction Systems* — [link to be added]
+- **[Companion paper]** *Wynn's World: The Cognitive Architecture at Work in a Minimal Counting Scenario* — [link to be added]
+
+All experiments in the companion paper are reproducible from this repository. Results run in under a minute on CPU.
 
 ## Quickstart
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)]([colab link])
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/kubasiemion/emergent_ontology/blob/master/wynns_world.ipynb)
 
-The notebook `wynns_world.ipynb` reproduces every exhibit in the paper, in section order. No setup required beyond running the first cell.
+The notebook `wynns_world.ipynb` reproduces every exhibit in the companion paper, in section order. No setup required beyond running the first cell.
 
 ## Local setup
 
@@ -29,9 +32,10 @@ Or run the notebook in Jupyter.
 ## Structure
 
 ```
-wynns_world/
+emergent_ontology/
   arena/
     run_match.py          — match runner
+    probe_wiring.py       — score individual wirings without re-running a full match
     matches/              — one directory per experiment
       cap4_ghost_games/
         config.json       — match parameters
@@ -44,6 +48,11 @@ wynns_world/
         weights.pt        — trained weights
         train.py          — training script
       ...
+  papers/
+    architecture_preprint_v6b.pdf
+    companion_paper_v4.pdf
+    architecture_diagram_v2.pdf
+    *.tex                 — LaTeX sources
   src/
     models/               — BoxedCounter, SymbolicCounter
     matcher/              — brute-force wiring search
@@ -54,22 +63,24 @@ wynns_world/
 
 ## Models
 
-All models are `BoxedCounter`: a GRU-based recurrent network (emb dim 8, hidden dim 16) pre-trained on token sequences from its training world. Token vocabulary: `INC`, `DEC`, `C0`…`C_{n-1}` — total `n_counts + 2` tokens.
+All neural models are `BoxedCounter`: a GRU-based recurrent network (emb dim 8, hidden dim 16) pre-trained on token sequences from its training world. Token vocabulary: `INC`, `DEC`, `C0`…`C_{n-1}` — total `n_counts + 2` tokens.
 
 | Model | n_counts | Training | Accuracy |
 |---|---|---|---|
 | cap3_acc70 | 3 | Full cap3 curriculum | ~70% |
 | cap3_acc80 | 3 | Full cap3 curriculum | ~80% |
+| cap3_acc90 | 3 | Full cap3 curriculum | ~90% |
 | cap4_acc70 | 4 | Full cap4 curriculum | ~70% |
 | cap4_acc80 | 4 | Full cap4 curriculum | ~80% |
 | cap4_ghost | 4 | Cap3 curriculum only | ~80% on cap3 |
 | cap5_acc70 | 5 | Full cap5 curriculum | ~70% |
 | cap5_acc80 | 5 | Full cap5 curriculum | ~80% |
 | cap5_cap4trained_acc80 | 5 | Cap4 curriculum only | ~80% on cap4 |
+| mod5_counter_acc80 | 5 | Modular counter variant | ~80% |
 | symbolic_cap4 | 4 | By construction | 100% |
 
 ## Citation
 
 ```
-[citation placeholder]
+[citation placeholder — to be added upon publication]
 ```
