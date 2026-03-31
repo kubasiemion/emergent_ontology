@@ -4,6 +4,8 @@ __pycache__/
 *.pyo
 *.egg-info/
 
+nogit/
+
 # LaTeX build artifacts
 *.aux
 *.fdb_latexmk
